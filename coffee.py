@@ -1,42 +1,4 @@
-from random import seed
-from random import randint
-
-# current day number
-day = 1
-
-# starting cash on hand
-cash = 100.00
-
-# coffee on hand (cups)
-coffee = 100
-
-# sales list of dictionaries
-sales = [
-    {
-        "day": 1,
-        "coffee_inv": 100,
-        "advertising": "10",
-        "temp": 68,
-        "cups_sold": 16
-    },
-    {
-        "day": 2,
-        "coffee_inv": 84,
-        "advertising": "15",
-        "temp": 72,
-        "cups_sold": 20
-    },
-    {
-        "day": 3,
-        "coffee_inv": 64,
-        "advertising": "5",
-        "temp": 78,
-        "cups_sold": 10
-    }
-]
-
-# empty sales list
-sales = []
+import random
 
 def welcome():
     print("Lets collect some information before we start the game.\n")
@@ -55,58 +17,145 @@ def daily_stats(cash_on_hand, weather_temp, coffee_inventory):
     print("You have enough on hand to make " + str(coffee_inventory) + " cupes.\n")
 
 def convert_to_float(s):
-    # if conversion failes, assign 0 to it
+    # if conversion fails, assign 0 to it
     try:
         f = float(s)
     except ValueError:
         f = 0
     return f
 
-def get_weather():
-    # generatte a random temperture between 20 and 90
-    # We'll consider season later on, but this is good enough for now
-    return randint(20, 90)
+def x_of_y(x,y):
+    num_list = []
+    #return a list of x copies of y
+    for i in range(x):
+        num_list.append(y)
+    return num_list
 
-# run welcome message
+class CoffeeShopSimulator:
+    
+    # Minimun and maximum temperature
+    TEMP_MIN = 20
+    TEMP_MAX = 90
+    
+    def __init__(self, player_name, shop_name):
+        # Set player and coffee shop names
+        self.player_name = player_name
+        self.shop_name = shop_name
+        
+        # Current day number
+        self.day = 1
+        # Cash on hand at start
+        self.cash = 100.00
+        # Inventory at start
+        self.coffee_inventory = 100
+        # Sales lit
+        self.sales = []
+        # Possible temperature
+        self.temps = self.make_temp_distribution()
+    
+    def run(self):
+        print("\nOK, let's get started. Have fun!")
+        
+        # The main game loop
+        running = True
+        while running:
+            # Display the day and add a "fancy" text effect
+            self.day_header()
+            # Get the weather
+            temperature = self.weather
+            # Display the cash and weather
+            self.daily_stats(temperature)
+            # Get price of a cup of coffee
+            cup_price = float(prompt("What do you want to charge per cup of coffee?"))
+            # Get advertising spend
+            print("\nYou can buy advertising to help promote sales.")
+            advertising = prompt("How much do you wan to spend on advertising (0 for none)?", False)
+            # Convert advertising into a float
+            advertising = convert_to_float(advertising)
+            # Deduct advertising from cash on hand
+            self.cash -= advertising
+            #Simulate today's sales
+            cups_sold = self.simulate(temperature, advertising, cup_price)
+            gross_profit = cups_sold * cup_price
+            # Display the results
+            print("You sold " + str(cups_sold) + " cups of coffee today")
+            print("You made $" + str(gross_profit) + ".")
+            # Add the profit to oue coffers
+            self.cash += gross_profit
+            # Subtract inventory
+            self.coffee_inventory -= cups_sold
+            # Before we loop around, add a day
+            self.increment_day()
+    
+    def simulate(self, temperature, advertising, cup_price):
+        # Find out how many cups were sold
+        cups_sold = self.daily_sales(temperature, advertising)
+        
+        # Save the sales data for today
+        self.sales.append({
+            "day": self.day,
+            "coffee_inv": self.coffee_inventory,
+            "advertising": advertising,
+            "temp": temperature,
+            "cup_price": cup_price,
+            "cups_sold": cups_sold
+        })
+        
+        return cups_sold
+    
+    def make_temp_distribution(self):
+        # This is nto a good bell curve, but it will do for now until more advance math
+        temps = []
+        # First, find the average between TEMP_MIN and TEMP_MAX
+        avg = (self.TEMP_MIN + self.TEMP_MAX) / 2
+        # Find the distance between TEMP_MAX and the average
+        max_dist_from_avg = self.TEMP_MAX - avg
+        
+        #Loop through all posssible temperatures
+        for i in range(self.TEMP_MIN, self.TEMP_MAX):
+            # How far away is the temperature from the average
+            # abs() gives the absolute value
+            dist_from_avg = abs(avg - i)
+            # How far away si the dist_from_avg from the maximum?
+            # This will be lower for temps at the extremes
+            dist_from_max_dist = max_dist_from_avg - dist_from_avg
+            # If the value is zero, make it one
+            if dist_from_max_dist == 0:
+                dist_from_max_dist = 1
+            # Append the output of x_of_y to temps
+            for t in x_of_y(int(dist_from_max_dist), i):
+                temps.append(t)
+        return temps
+        
+    def increment_day(self):
+        self.day += 1
+        
+    def daily_stats(self, temperature):
+        print("You have $" + str(self.cash) + " cash on hand and the temperature is " + str(temperature) + ".")
+        print("You have enough coffee on hand to make " + str(self.coffee_inventory) + " cups\n")
+        
+    def day_header(self):
+        print("\n-----| Day " + str(self.day) + " @ " + self.shop_name + " |-----")
+    
+    def daily_sales(self, temperature, advertising):
+        return int((self.TEMP_MAX - temperature) * (advertising * 0.5))
+    
+    @property
+    def weather(self):
+        # Generate a random temperature between 20 and 90
+        return random.choice(self.temps)
+    
+# Print Welcome 
 welcome()
 
-# get name and store name
-name = prompt("What is your name?", True)
-shop_name = prompt("What do you want to name your coffee shop?", True)
+# Get name and store name
+t_name = prompt("What is you name?", True)
+t_shop_name = prompt("What do you want to name you coffee shop?", True)
 
-# We have what we need, so let's get started
-print("\nOk, let's get started. Have fun!")
+# Create the game object
+game = CoffeeShopSimulator(t_name, t_shop_name)
 
-# The main game loop
-running =  True
-while running:
-    # display the day and add a "fancy" text effect
-    print("\n-----| Day " + str(day) + " @ " + shop_name + " |-----")
-    
-    temperature = get_weather()
-    
-    # display the cash and weather
-    daily_stats(cash, temperature, coffee)
-    
-    # get price of a cup of coffee
-    cup_price = prompt("What do you want to charge per cup of coffee?")
-    
-    # get price of a cup coffee
-    print("\nYou can buy advertising to help prompt sales.")
-    advertising = prompt("How much do you want to spend on advertising (0 for none)?", False)
-    
-    # convert advertising into a float
-    advertising = convert_to_float(advertising)
-    
-    # deduct advertising from the cash on hand
-    cash -= advertising
-    
-    #TODO: calculate today's performance
-    cups_sold = prompt("How many cups of coffee were sold today?")
-    profit = round(float(cup_price) * int(cups_sold), 2)
-    #TODO: display today's performance
-    print("\nToday's total profit: " + str(profit))
-    
-    # before we loop around, add a day
-    day += 1
+#Run the game
+game.run()
+        
     
