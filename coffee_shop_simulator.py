@@ -1,35 +1,5 @@
 import random
-
-def welcome():
-    print("Lets collect some information before we start the game.\n")
-    
-def prompt(display="Please input a string", require=True):
-    if require:
-        s = False
-        while not s:
-            s = input(display + " ")
-    else:
-        s = input(display + " ")
-    return s
-
-def daily_stats(cash_on_hand, weather_temp, coffee_inventory):
-    print("You have $" + str(cash_on_hand) + " cash on hand and the temperature is " + str(weather_temp) + ".")
-    print("You have enough on hand to make " + str(coffee_inventory) + " cupes.\n")
-
-def convert_to_float(s):
-    # if conversion fails, assign 0 to it
-    try:
-        f = float(s)
-    except ValueError:
-        f = 0
-    return f
-
-def x_of_y(x,y):
-    num_list = []
-    #return a list of x copies of y
-    for i in range(x):
-        num_list.append(y)
-    return num_list
+from utilities import *
 
 class CoffeeShopSimulator:
     
@@ -54,7 +24,7 @@ class CoffeeShopSimulator:
         self.temps = self.make_temp_distribution()
     
     def run(self):
-        print("\nOK, let's get started. Have fun!")
+        print("\nOk, let's get started. Have fun!")
         
         # The main game loop
         running = True
@@ -135,7 +105,7 @@ class CoffeeShopSimulator:
         print("You have enough coffee on hand to make " + str(self.coffee_inventory) + " cups\n")
         
     def day_header(self):
-        print("\n-----| Day " + str(self.day) + " @ " + self.shop_name + " |-----")
+        print("\n-----| Day " + str(self.day) + " @ " + str(self.shop_name) + " |-----")
     
     def daily_sales(self, temperature, advertising):
         return int((self.TEMP_MAX - temperature) * (advertising * 0.5))
@@ -145,17 +115,5 @@ class CoffeeShopSimulator:
         # Generate a random temperature between 20 and 90
         return random.choice(self.temps)
     
-# Print Welcome 
-welcome()
-
-# Get name and store name
-t_name = prompt("What is you name?", True)
-t_shop_name = prompt("What do you want to name you coffee shop?", True)
-
-# Create the game object
-game = CoffeeShopSimulator(t_name, t_shop_name)
-
-#Run the game
-game.run()
         
     
