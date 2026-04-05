@@ -1,4 +1,5 @@
 import random
+import re
 from utilities import *
 
 class CoffeeShopSimulator:
@@ -31,29 +32,59 @@ class CoffeeShopSimulator:
         while running:
             # Display the day and add a "fancy" text effect
             self.day_header()
+            
             # Get the weather
             temperature = self.weather
+            
             # Display the cash and weather
             self.daily_stats(temperature)
+            
             # Get price of a cup of coffee
-            cup_price = float(prompt("What do you want to charge per cup of coffee?"))
+            # cup_price = float(prompt("What do you want to charge per cup of coffee?"))
+            response = prompt("What do you want to charge per cup of coffee? (type exit to quit)")
+            if re.search("^exit", response, re.IGNORECASE):
+                running = False
+                continue
+            else:
+                cup_price = float(response)
+                
+            # do you want to buy more inventory
+            response = prompt("Do you want to buy more coffee for your inventory? (hit enter for none or type number)", False)
+            
+            if response:
+                if not self.buy_coffee(response):
+                    print("Could not buy additional inventory.")
+            
             # Get advertising spend
             print("\nYou can buy advertising to help promote sales.")
             advertising = prompt("How much do you wan to spend on advertising (0 for none)?", False)
+            
             # Convert advertising into a float
             advertising = convert_to_float(advertising)
+            
             # Deduct advertising from cash on hand
             self.cash -= advertising
+            
             #Simulate today's sales
             cups_sold = self.simulate(temperature, advertising, cup_price)
             gross_profit = cups_sold * cup_price
+            
             # Display the results
             print("You sold " + str(cups_sold) + " cups of coffee today")
             print("You made $" + str(gross_profit) + ".")
+            
             # Add the profit to oue coffers
             self.cash += gross_profit
+            
             # Subtract inventory
             self.coffee_inventory -= cups_sold
+            
+            # check cash on hand
+            if self.cash < 0:
+                print("\n:( Game over! you ran out of cash.")
+                running = False
+                continue
+            
             # Before we loop around, add a day
             self.increment_day()
     
@@ -72,6 +103,19 @@ class CoffeeShopSimulator:
         })
         
         return cups_sold
+    
+    def buy_coffee(self, amount):
+        try:
+            i_amount = int(amount)
+        except ValueError:
+            return False
+        
+        if i_amount <= self.cash:
+            self.coffee_inventory += i_amount
+            self.cash -= i_amount
+            return True
+        else:
+            return False
     
     def make_temp_distribution(self):
         # This is nto a good bell curve, but it will do for now until more advance math
@@ -108,7 +152,11 @@ class CoffeeShopSimulator:
         print("\n-----| Day " + str(self.day) + " @ " + str(self.shop_name) + " |-----")
     
     def daily_sales(self, temperature, advertising):
-        return int((self.TEMP_MAX - temperature) * (advertising * 0.5))
+        sales = int((self.TEMP_MAX - temperature) * (advertising * 0.5))
+        if sales > self.coffee_inventory:
+            sales = self.coffee_inventory
+            print("You would have sold more coffee but you ran out. Be sure to buy additional inventory.")
+        return sales
     
     @property
     def weather(self):

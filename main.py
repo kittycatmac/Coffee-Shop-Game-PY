@@ -12,3 +12,6 @@ t_shop_name = prompt("What do you want to nane your coffee shop?", True)
 game = CoffeeShopSimulator(t_name, t_shop_name)
 
 game.run()
+
+# say goodbye
+print("/nThanks for playing. Have a great rest if your day!\n")
