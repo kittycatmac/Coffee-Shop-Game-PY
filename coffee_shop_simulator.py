@@ -1,5 +1,6 @@
 import random
 import re
+import numpy
 from utilities import *
 
 class CoffeeShopSimulator:
@@ -7,6 +8,10 @@ class CoffeeShopSimulator:
     # Minimun and maximum temperature
     TEMP_MIN = 20
     TEMP_MAX = 90
+    
+    # length of temperature list
+    # higher for more realistic curve
+    SERIES_DENSITY = 300
     
     def __init__(self, player_name, shop_name):
         # Set player and coffee shop names
@@ -90,7 +95,7 @@ class CoffeeShopSimulator:
     
     def simulate(self, temperature, advertising, cup_price):
         # Find out how many cups were sold
-        cups_sold = self.daily_sales(temperature, advertising)
+        cups_sold = self.daily_sales(temperature, advertising, cup_price)
         
         # Save the sales data for today
         self.sales.append({
@@ -118,28 +123,38 @@ class CoffeeShopSimulator:
             return False
     
     def make_temp_distribution(self):
-        # This is nto a good bell curve, but it will do for now until more advance math
-        temps = []
-        # First, find the average between TEMP_MIN and TEMP_MAX
-        avg = (self.TEMP_MIN + self.TEMP_MAX) / 2
-        # Find the distance between TEMP_MAX and the average
-        max_dist_from_avg = self.TEMP_MAX - avg
+        # create series of numbers between TEMP_MIN and TEMP_MAX
+        series = numpy.linspace(self.TEMP_MIN, self.TEMP_MAX, self.SERIES_DENSITY)
         
-        #Loop through all posssible temperatures
-        for i in range(self.TEMP_MIN, self.TEMP_MAX):
-            # How far away is the temperature from the average
-            # abs() gives the absolute value
-            dist_from_avg = abs(avg - i)
-            # How far away si the dist_from_avg from the maximum?
-            # This will be lower for temps at the extremes
-            dist_from_max_dist = max_dist_from_avg - dist_from_avg
-            # If the value is zero, make it one
-            if dist_from_max_dist == 0:
-                dist_from_max_dist = 1
-            # Append the output of x_of_y to temps
-            for t in x_of_y(int(dist_from_max_dist), i):
-                temps.append(t)
-        return temps
+        # obtain mean and standard deviation from the series
+        mean = numpy.mean(series)
+        
+        std_dev = numpy.std(series)
+        
+        #calculate probability density and return the list it creates
+        return (numpy.pi * std_dev) * numpy.exp(-0.5 * ((series - mean) / std_dev) ** 2)
+        # # This is nto a good bell curve, but it will do for now until more advance math
+        # temps = []
+        # # First, find the average between TEMP_MIN and TEMP_MAX
+        # avg = (self.TEMP_MIN + self.TEMP_MAX) / 2
+        # # Find the distance between TEMP_MAX and the average
+        # max_dist_from_avg = self.TEMP_MAX - avg
+        
+        # #Loop through all posssible temperatures
+        # for i in range(self.TEMP_MIN, self.TEMP_MAX):
+        #     # How far away is the temperature from the average
+        #     # abs() gives the absolute value
+        #     dist_from_avg = abs(avg - i)
+        #     # How far away si the dist_from_avg from the maximum?
+        #     # This will be lower for temps at the extremes
+        #     dist_from_max_dist = max_dist_from_avg - dist_from_avg
+        #     # If the value is zero, make it one
+        #     if dist_from_max_dist == 0:
+        #         dist_from_max_dist = 1
+        #     # Append the output of x_of_y to temps
+        #     for t in x_of_y(int(dist_from_max_dist), i):
+        #         temps.append(t)
+        # return temps
         
     def increment_day(self):
         self.day += 1
@@ -151,8 +166,23 @@ class CoffeeShopSimulator:
     def day_header(self):
         print("\n-----| Day " + str(self.day) + " @ " + str(self.shop_name) + " |-----")
     
-    def daily_sales(self, temperature, advertising):
-        sales = int((self.TEMP_MAX - temperature) * (advertising * 0.5))
+    def daily_sales(self, temperature, advertising, cup_price):
+        
+        # randomize advertising effectiveness
+        adv_coefficient = random.randint(20, 80) / 100
+        
+        # higher priced coffee not selling as well
+        price_coeficient = int((cup_price * (random.randint(50, 250) / 100)))
+        
+        # run the sales
+        sales = int((self.TEMP_MAX - temperature) * (advertising * adv_coefficient))
+        
+        # if price to high, we don't sell anything
+        if price_coeficient > sales:
+            sales = 0
+        else:
+            sales -= price_coeficient
+            
         if sales > self.coffee_inventory:
             sales = self.coffee_inventory
             print("You would have sold more coffee but you ran out. Be sure to buy additional inventory.")
